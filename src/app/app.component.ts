@@ -5,6 +5,7 @@ import { DisplayService } from './services/display.service';
 import { NetCommandService } from './services/repair/net-command.service';
 import { StructureType, UploadService } from './services/upload/upload.service';
 import { FD_LOG } from './components/ilpn/file-display';
+import { DescriptiveLinkComponent } from './components/ilpn/descriptive-link/descriptive-link.component';
 
 @Component({
   selector: 'app-root',
@@ -45,7 +46,10 @@ export class AppComponent implements OnInit {
   }
 
   dropFiles(event: DragEvent, type: StructureType | undefined): void {
-    if (event.dataTransfer?.files) {
+    const linkData = event.dataTransfer?.getData(DescriptiveLinkComponent.DRAG_DATA_KEY);
+    if (linkData) {
+      this.uploadService.uploadFilesFromLinks(linkData);
+    } else if (event.dataTransfer?.files) {
       this.uploadService.uploadFiles(event.dataTransfer.files, type);
     }
   }

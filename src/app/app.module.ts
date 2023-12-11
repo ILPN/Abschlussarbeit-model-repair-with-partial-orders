@@ -29,6 +29,7 @@ import { TemplateButtonComponent } from './components/template-button/template-b
 import { DescriptiveLinkComponent } from './components/ilpn/descriptive-link/descriptive-link.component';
 import { InfoCardComponent } from './components/ilpn/info-card/info-card.component';
 import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -66,6 +67,7 @@ import { APP_BASE_HREF, PlatformLocation } from '@angular/common';
     OverlayModule,
     MatProgressSpinnerModule,
     MatSlideToggleModule,
+    HttpClientModule,
   ],
   providers: [
     {

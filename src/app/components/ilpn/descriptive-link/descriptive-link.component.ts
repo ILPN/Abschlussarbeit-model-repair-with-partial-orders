@@ -56,7 +56,7 @@ export class DescriptiveLinkComponent {
 
   addDragInformation(e: DragEvent) {
     if (this.isAnchor()) {
-      this.configureDragTransfer(e, this.resolveSingleLink(this.link as string));
+      this.configureDragTransfer(e, JSON.stringify(this.resolveLinks()));
       return;
     }
     const links = this.resolveLinks();
