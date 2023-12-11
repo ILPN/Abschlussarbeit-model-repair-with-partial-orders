@@ -1,0 +1,23 @@
+.type log
+.attributes
+case-id
+concept:name
+event-id
+follows[]
+.events
+1 Grind_Beans km []
+1 Unlock_coffee_machine ke []
+1 Get_water_with_glass_pot wgh []
+1 Empty_strainer fl [ke]
+1 Fill_strainer ff [km, fl]
+1 Fill_kettle we [wgh, ke]
+1 Clean_coffee_pot ka [ke]
+1 Assemble_and_turn_on e [ka, we, ff]
+2 Grind_Beans km []
+2 Unlock_coffee_machine ke []
+2 Empty_strainer fl [ke]
+2 Fill_strainer ff [km, fl]
+2 Clean_coffee_pot ka [ke]
+2 Get_water_with_coffee_pot wkh [ka]
+2 Fill_kettle we [wkh]
+2 Assemble_and_turn_on e [we, ff]

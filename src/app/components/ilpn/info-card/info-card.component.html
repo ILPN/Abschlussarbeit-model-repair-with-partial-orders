@@ -1,0 +1,11 @@
+<!-- Component copied from the ILPN library -->
+<div class="border" [ngClass]="{'border-enabled': !disabled}" fxLayout="row" fxLayoutAlign="start top">
+    <div class="square" [ngStyle]="{'color': resolveSquareColor(), 'border-color': resolveBorderColor()}" fxLayout="row" fxLayoutAlign="center center" fxFlex="nogrow">
+        {{resolveSquareContent()}}
+    </div>
+    <div class="description" fxLayout="column" fxLayoutAlign="top center" fxFlex>
+        <span>{{title}}</span>
+        <hr class="width100">
+        <span class="description-min-height" [ngStyle]="{'height': resolveDescriptionHeight()}">{{description}}</span>
+    </div>
+</div>

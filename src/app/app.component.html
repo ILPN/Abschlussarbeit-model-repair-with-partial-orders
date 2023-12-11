@@ -1,10 +1,8 @@
 <div fxLayout="column" fxLayoutAlign="start stretch">
   <!--  Header  -->
   <a href="https://www.fernuni-hagen.de/ilovepetrinets/"
-    ><h1>I <span class="red">❤</span> Petri Nets</h1></a
+  ><h1>I <span class="red">❤</span> Petri Nets</h1></a
   >
-  <h2>... especially functioning nets 🛠️</h2>
-
   <p>
     With this tool you can check whether a Petri net can be enabled by your
     log(s). <br />
@@ -125,38 +123,28 @@
           class="color_error text-center"
           *ngIf="partialOrderCount.count === 0; else showCount"
         >
-          <mat-icon class="color_error"> error_outline </mat-icon>
+          <mat-icon class="color_error"> error_outline</mat-icon>
           Logs are required to use the tool
         </p>
         <ng-template #showCount>
           <p class="color_success text-center">
-            <mat-icon class="color_success"> check_circle </mat-icon>
+            <mat-icon class="color_success"> check_circle</mat-icon>
             Uploaded {{ partialOrderCount.count }}
             {{ partialOrderCount.count === 1 ? 'trace' : 'traces' }}
           </p>
         </ng-template>
       </main>
-
-      <div class="empty-button-list">
-        <app-template-button
-          *ngIf="false"
-          class="margin-spaces"
-          buttonText="Download example"
-          buttonIcon="star"
-          styleClass="color_primary"
-          (buttonAction)="downloadExample()"
-        ></app-template-button>
-
-        <app-template-button
-          class="margin-spaces"
-          buttonText="Evaluation files"
-          buttonIcon="star"
-          styleClass="color_primary"
-          (buttonAction)="downloadEvaluationFiles()"
-        ></app-template-button>
-      </div>
     </ng-container>
   </ng-container>
+
+  <div>
+    <div fxLayout="row wrap" fxLayoutAlign="start start" fxLayout.sm="column" fxLayoutAlign.sm="space-between center">
+      <ilpn-descriptive-link [fileDisplay]="fdLog" title="AND example" description="Model with an AND-split" [link]="['assets/and.log', 'assets/and.pn']" [download]="true"></ilpn-descriptive-link>
+      <ilpn-descriptive-link [fileDisplay]="fdLog" title="Loop example" description="Model with a loop" [link]="['assets/loop.log', 'assets/loop.pn']" [download]="true"></ilpn-descriptive-link>
+      <ilpn-descriptive-link [fileDisplay]="fdLog" title="Skip example" description="Model with an optional task" [link]="['assets/skip.log', 'assets/skip.pn']" [download]="true"></ilpn-descriptive-link>
+      <ilpn-descriptive-link [fileDisplay]="fdLog" title="Complex example" description="Model of a coffe machine" [link]="['assets/complex.log', 'assets/complex.pn']" [download]="true"></ilpn-descriptive-link>
+    </div>
+  </div>
 
   <app-footer></app-footer>
 </div>
