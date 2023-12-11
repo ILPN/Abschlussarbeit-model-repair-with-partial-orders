@@ -1,5 +1,5 @@
 import { parseXml } from '../xml-parser.fn';
-import { XesWrapper } from './xes.model';
+import { XesEvent, XesString, XesTrace, XesWrapper } from './xes.model';
 
 const logStart = `.type log
 .attributes
@@ -17,21 +17,16 @@ export function parseXesFileToCustomLogFormat(xmlContent: string): string {
 
   for (let i = 0; i < traces.length; i++) {
     const trace = traces[i];
-    const traceId =
-      trace.string.find((s) => s.key === 'concept:name')?.value ?? i;
+    const traceId = xesFind(trace, 'concept:name') ?? i;
 
     const filteredEvents = trace.event.filter((event) => {
-      const lifecycle = event.string.find(
-        (s) => s.key === 'lifecycle:transition'
-      );
-      return lifecycle === undefined || lifecycle.value === 'complete';
+      const lifecycle = xesFind(event, 'lifecycle:transition');
+      return lifecycle === undefined || lifecycle === 'complete';
     });
 
     for (let j = 0; j < filteredEvents.length; j++) {
       const event = trace.event[j];
-      const eventName = event.string.find(
-        (s) => s.key === 'concept:name'
-      )?.value;
+      const eventName = xesFind(event, 'concept:name');
       if (!eventName) {
         throw Error(`Event name is not defined in trace ${i} and event ${j}!`);
       }
@@ -42,4 +37,15 @@ export function parseXesFileToCustomLogFormat(xmlContent: string): string {
   }
 
   return text;
+}
+
+function xesFind(stringsContainer: XesEvent, key: string): string | undefined {
+  if (Array.isArray(stringsContainer.string)) {
+    return stringsContainer.string.find((s) => s.key === key)?.value;
+  } else {
+    if (stringsContainer.string['key'] === key) {
+      return  stringsContainer.string['value'];
+    }
+  }
+  return undefined;
 }
