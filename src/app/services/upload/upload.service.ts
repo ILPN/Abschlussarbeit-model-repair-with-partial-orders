@@ -91,8 +91,9 @@ export class UploadService {
     }
   }
 
-  uploadFilesFromLinks(links: string) {
+  uploadFilesFromLinks(links: string): Observable<void> {
     const linkData$: Array<Observable<LinkContent>> = [];
+    const signal$ = new ReplaySubject<void>();
 
     if (!links.startsWith('[')) {
       linkData$.push(this.fetchLinkData(links));
@@ -105,9 +106,11 @@ export class UploadService {
 
     forkJoin(linkData$).pipe(take(1)).subscribe(results => {
       results.filter(r => !!r.content).forEach(r => {
-        this.processTextFileContent(r.content as string, getExtensionForFileName(r.link));
+        this.processTextFileContent(r.content as string, getExtensionForFileName(r.link), signal$);
       });
     });
+
+    return signal$.asObservable();
   }
 
   private fetchLinkData(link: string): Observable<LinkContent> {
@@ -122,22 +125,24 @@ export class UploadService {
     );
   }
 
-  private processTextFileContent(content: string, fileExtension?: string) {
+  private processTextFileContent(content: string, fileExtension?: string, signal$?: ReplaySubject<void>) {
     if (fileExtension?.toLowerCase() === 'pnml') {
       content = getRunTextFromPnml(content);
     }
     if (fileExtension?.toLowerCase() === 'xes') {
       content = parseXesFileToCustomLogFormat(content);
     }
-    this.processNewSource(content);
+    this.processNewSource(content, signal$);
   }
 
-  private processNewSource(newSource: string): void {
+  private processNewSource(newSource: string, signal$?: ReplaySubject<void>): void {
     if (newSource.trim().startsWith(netTypeKey)) {
       this.currentNetUpload$.next(newSource);
     } else {
       this.currentLogUpload$.next(newSource);
     }
+    signal$?.next();
+    signal$?.complete();
   }
 }
 

@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { first, map, Observable, Subject } from 'rxjs';
+import { first, map, Observable, Subject, take } from 'rxjs';
 import { DisplayService } from './services/display.service';
 import { NetCommandService } from './services/repair/net-command.service';
 import { StructureType, UploadService } from './services/upload/upload.service';
@@ -12,7 +12,7 @@ import { DescriptiveLinkComponent } from './components/ilpn/descriptive-link/des
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, AfterViewInit {
   fdLog = FD_LOG;
 
   hasPartialOrders = false;
@@ -20,6 +20,8 @@ export class AppComponent implements OnInit {
   partialOrderCount$: Observable<{ count: number }>;
   resetPositioningSubject: Subject<void> = new Subject<void>();
   shouldShowSuggestions$: Observable<boolean>;
+
+  @ViewChild('firstExample') firstExampleComp: DescriptiveLinkComponent | undefined;
 
   constructor(
     private displayService: DisplayService,
@@ -65,6 +67,22 @@ export class AppComponent implements OnInit {
     this.partialOrderCount$
       .pipe(first())
       .subscribe((count) => this.startEditing(count.count));
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.firstExampleComp) {
+      return;
+    }
+
+    const fakeDrag = {dataTransfer: new DataTransfer()} as DragEvent;
+    this.firstExampleComp.addDragInformation(fakeDrag);
+
+    const signal$ = this.uploadService.uploadFilesFromLinks(fakeDrag.dataTransfer!.getData(DescriptiveLinkComponent.DRAG_DATA_KEY));
+
+    signal$.pipe(take(1)).subscribe(() => {
+      this.hasPartialOrders = true;
+      setTimeout(() => this.resetSvgPositioning());
+    });
   }
 
   changeToggle(event: MatSlideToggleChange): void {

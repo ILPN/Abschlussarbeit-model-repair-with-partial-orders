@@ -5,12 +5,12 @@ export type XesWrapper = {
 };
 
 export type XesTrace = {
-  string: XesString[];
+  string: XesString[] | XesString;
   event: XesEvent[];
 };
 
 export type XesEvent = {
-  string: XesString[];
+  string: XesString[] | XesString;
 };
 
 export type XesString = {

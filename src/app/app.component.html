@@ -20,7 +20,6 @@
     </mat-slide-toggle>
   </section>
 
-  <ng-container *ngIf="partialOrderCount$ | async as partialOrderCount">
     <div [style.display]="hasPartialOrders ? 'block' : 'none'">
       <main>
         <app-display
@@ -87,59 +86,9 @@
       </div>
     </div>
 
-    <ng-container *ngIf="!hasPartialOrders">
-      <main>
-        <div class="initial-content">
-          <p>
-            Before you can use the tool, you need to upload one or more logs.
-            Also you can upload a Petri net to have a starting point.
-            Alternatively you can create a new net with this tool.
-          </p>
-        </div>
-
-        <div class="empty-button-list">
-          <app-template-button
-            buttonText="Upload logs and/or a net"
-            buttonIcon="upload"
-            [styleClass]="
-              partialOrderCount.count === 0 ? 'color_error' : 'color_success'
-            "
-            (buttonAction)="openFileSelector(undefined)"
-            (dropAction)="dropFiles($event, undefined)"
-          ></app-template-button>
-        </div>
-
-        <div class="submit-button-row">
-          <button
-            [disabled]="partialOrderCount.count === 0"
-            mat-raised-button
-            color="primary"
-            (click)="startEditing(partialOrderCount.count)"
-          >
-            Start editing
-          </button>
-        </div>
-        <p
-          class="color_error text-center"
-          *ngIf="partialOrderCount.count === 0; else showCount"
-        >
-          <mat-icon class="color_error"> error_outline</mat-icon>
-          Logs are required to use the tool
-        </p>
-        <ng-template #showCount>
-          <p class="color_success text-center">
-            <mat-icon class="color_success"> check_circle</mat-icon>
-            Uploaded {{ partialOrderCount.count }}
-            {{ partialOrderCount.count === 1 ? 'trace' : 'traces' }}
-          </p>
-        </ng-template>
-      </main>
-    </ng-container>
-  </ng-container>
-
   <div>
     <div fxLayout="row wrap" fxLayoutAlign="start start" fxLayout.sm="column" fxLayoutAlign.sm="space-between center">
-      <ilpn-descriptive-link [fileDisplay]="fdLog" title="AND example" description="Model with an AND-split" [link]="['assets/and.log', 'assets/and.pn']" [download]="true"></ilpn-descriptive-link>
+      <ilpn-descriptive-link #firstExample [fileDisplay]="fdLog" title="AND example" description="Model with an AND-split" [link]="['assets/and.log', 'assets/and.pn']" [download]="true"></ilpn-descriptive-link>
       <ilpn-descriptive-link [fileDisplay]="fdLog" title="Loop example" description="Model with a loop" [link]="['assets/loop.log', 'assets/loop.pn']" [download]="true"></ilpn-descriptive-link>
       <ilpn-descriptive-link [fileDisplay]="fdLog" title="Skip example" description="Model with an optional task" [link]="['assets/skip.log', 'assets/skip.pn']" [download]="true"></ilpn-descriptive-link>
       <ilpn-descriptive-link [fileDisplay]="fdLog" title="Complex example" description="Model of a coffe machine" [link]="['assets/complex.log', 'assets/complex.pn']" [download]="true"></ilpn-descriptive-link>
