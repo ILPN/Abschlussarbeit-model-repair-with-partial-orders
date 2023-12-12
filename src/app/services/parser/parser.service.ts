@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
-import { Arc, Breakpoint } from 'src/app/classes/diagram/arc';
-
+import { Arc } from 'src/app/classes/diagram/arc';
 import {
   addArc,
   addEventItem,
@@ -9,17 +8,15 @@ import {
   addTransition,
   generateEventItem,
   getElementsWithArcs,
-  setRefs,
+  setRefs
 } from '../../classes/diagram/functions/net-helper.fn';
 import {
   determineInitialAndFinalEvents,
-  PartialOrder,
+  PartialOrder
 } from '../../classes/diagram/partial-order';
 import { PetriNet } from '../../classes/diagram/petri-net';
-import { Place } from '../../classes/diagram/place';
-import { concatEvents, Transition } from '../../classes/diagram/transition';
+import { concatEvents } from '../../classes/diagram/transition';
 import {
-  arcsAttribute,
   attributesAttribute,
   caseIdAttribute,
   conceptNameAttribute,
@@ -28,23 +25,17 @@ import {
   followsAttribute,
   logTypeKey,
   netTypeKey,
-  placesAttribute,
-  transitionsAttribute,
 } from './parsing-constants';
-
-type ParsingStates = 'initial' | 'type' | 'transitions' | 'places' | 'arcs';
+import { JsonPetriNet } from './json-petri-net';
 
 type LogParsingStates = 'initial' | 'type' | 'attributes' | 'events';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class ParserService {
-  constructor(private toastr: ToastrService) {}
-
-  private readonly transitionRegex = /^(\S*)\s*(.*)$/;
-  private readonly placeRegex = /^(\S*)\s*(\d*)$/;
-  private readonly arcRegex = /^(\S*)\s*(\S*)\s*(\d*)$/;
+  constructor(private toastr: ToastrService) {
+  }
 
   private readonly logEventRegex = /^(\S+)\s*(\S+)\s*(\S+)?\s*(.*)$/;
 
@@ -145,11 +136,11 @@ export class ParserService {
               followsIndex === -1
                 ? []
                 : match[followsIndex]
-                    .replace('[', '')
-                    .replace(']', '')
-                    .split(',')
-                    .map((s) => s.trim())
-                    .filter((s) => !!s);
+                  .replace('[', '')
+                  .replace(']', '')
+                  .split(',')
+                  .map((s) => s.trim())
+                  .filter((s) => !!s);
 
             if (currentCaseId !== caseId) {
               if (currentPartialOrder) {
@@ -161,7 +152,7 @@ export class ParserService {
               currentCaseId = caseId;
               currentPartialOrder = {
                 arcs: [],
-                events: [],
+                events: []
               };
             }
 
@@ -176,7 +167,7 @@ export class ParserService {
                     target: id,
                     source: follow,
                     weight: 1,
-                    breakpoints: [],
+                    breakpoints: []
                   });
                 });
               } else if (lastCaseId) {
@@ -184,7 +175,7 @@ export class ParserService {
                   target: id,
                   source: lastCaseId,
                   weight: 1,
-                  breakpoints: [],
+                  breakpoints: []
                 });
               }
             }
@@ -213,174 +204,142 @@ export class ParserService {
   }
 
   parsePetriNet(content: string, errors: Set<string>): PetriNet | null {
-    const contentLines = content.split('\n');
-    const petriNet: PetriNet = {
-      transitions: [],
-      arcs: [],
-      places: [],
-    };
-
-    let currentParsingState: ParsingStates = 'initial';
     this.toastr.toasts.forEach((t) => {
       this.toastr.remove(t.toastId);
     });
 
-    for (const line of contentLines) {
-      const trimmedLine = line.trim();
-      if (trimmedLine === '') {
-        continue;
+    let contentObject: JsonPetriNet;
+    try {
+      contentObject = JSON.parse(content);
+    } catch (e) {
+      errors.add(
+        `The provided Petri net file is not a JSON. [${(e as SyntaxError).name}]: ${(e as SyntaxError).message}`
+      );
+      this.toastr.error(
+        'The provided Petri net file is not a JSON.',
+        'Unable to parse file'
+      );
+      return null;
+    }
+
+    const petriNet: PetriNet = {
+      transitions: [],
+      arcs: [],
+      places: []
+    };
+
+    if (contentObject.transitions === undefined || !Array.isArray(contentObject.transitions)) {
+      errors.add(`The Petri net JSON file must contain a 'transitions' string array attribute`);
+      this.toastr.error(
+        `The Petri net file does not specify any transitions`,
+        `Unable to parse file`
+      );
+      return null;
+    }
+    for (const t of contentObject.transitions) {
+      if (!addTransition(petriNet, {
+        id: t,
+        label: t,
+        type: 'transition',
+        incomingArcs: [],
+        outgoingArcs: []
+      })) {
+        this.toastr.warning(
+          `File contains duplicate transitions`,
+          `Duplicate transitions are ignored`
+        );
       }
+    }
 
-      switch (currentParsingState) {
-        case 'initial':
-          if (trimmedLine === netTypeKey) {
-            currentParsingState = 'type';
-            break;
-          } else {
-            errors.add(
-              `The type of the file with the net has to be '` + netTypeKey + `'`
-            );
-            this.toastr.error(
-              `The type has to be '` + netTypeKey + `'`,
-              `Unable to parse file`
-            );
-            return null;
-          }
-        case 'type':
-          if (trimmedLine === transitionsAttribute) {
-            currentParsingState = 'transitions';
-            break;
-          } else if (trimmedLine === arcsAttribute) {
-            currentParsingState = 'arcs';
-            break;
-          } else if (trimmedLine === placesAttribute) {
-            currentParsingState = 'places';
-            break;
-          } else {
-            errors.add(`The file contains invalid parts`);
-            this.toastr.error(
-              `The file contains invalid parts`,
-              `Unable to parse file`
-            );
-            return null;
-          }
-        case 'transitions':
-          if (
-            trimmedLine !== arcsAttribute &&
-            trimmedLine !== placesAttribute
-          ) {
-            const transition = this.parseTransition(trimmedLine);
+    if (contentObject.places === undefined || !Array.isArray(contentObject.places)) {
+      errors.add(`The Petri net JSON file must contain a 'places' string array attribute`);
+      this.toastr.error(
+        `The Petri net file does not specify any places`,
+        `Unable to parse file`
+      );
+      return null;
+    }
+    for (const p of contentObject.places) {
+      if (!addPlace(petriNet, {
+        id: p,
+        type: 'place',
+        marking: 0,
+        incomingArcs: [],
+        outgoingArcs: []
+      })) {
+        this.toastr.warning(
+          `File contains duplicate places`,
+          `Duplicate places are ignored`
+        );
+      }
+    }
 
-            if (!addTransition(petriNet, transition)) {
-              this.toastr.warning(
-                `File contains duplicate transitions`,
-                `Duplicate transitions are ignored`
-              );
-            }
-            break;
-          } else if (trimmedLine === arcsAttribute) {
-            currentParsingState = 'arcs';
-            break;
-          } else if (trimmedLine === placesAttribute) {
-            currentParsingState = 'places';
-            break;
-          } else {
-            errors.add(`Unable to parse file`);
-            this.toastr.error(`Error`, `Unable to parse file`);
-            return null;
-          }
-        case 'places':
-          if (
-            trimmedLine !== arcsAttribute &&
-            trimmedLine !== transitionsAttribute
-          ) {
-            const place = this.parsePlace(trimmedLine);
+    if (contentObject.arcs !== undefined && typeof contentObject.arcs === 'object') {
+      for (const a of Object.entries(contentObject.arcs)) {
+        const ids = a[0].split(',');
+        if (ids.length !== 2) {
+          this.toastr.warning(
+            `Arc id '${a[0]}' is malformed. Arc id must be of the form '<id>,<id>'.`,
+            `Malformed arc ignored`
+          );
+          continue;
+        }
+        const elements = getElementsWithArcs(petriNet);
+        const parsedSource = elements.find(
+          (transition) => transition.id === ids[0]
+        );
+        const parsedTarget = elements.find(
+          (transition) => transition.id === ids[1]
+        );
+        if (!parsedSource || !parsedTarget) {
+          this.toastr.error(
+            `An arc between ${ids[0]} and ${ids[1]} is invalid`,
+            `Unable to parse file`
+          );
+          errors.add(`An arc between ${ids[0]} and ${ids[1]} is invalid`);
+          throw Error(
+            `An arc between ${ids[0]} and ${ids[1]} is invalid`
+          );
+        }
+        if (parsedSource.type === parsedTarget.type) {
+          this.toastr.warning(
+            `Arc between ${ids[0]} and ${ids[1]} connect elements of the same type and will be ignored`,
+            `Malformed arc ignored`
+          );
+          continue;
+        }
+        if (!addArc(petriNet, {
+          weight: a[1],
+          source: ids[0],
+          target: ids[1],
+          breakpoints: []
+        })) {
+          this.toastr.warning(
+            `File contains duplicate arcs`,
+            `Duplicate arcs are ignored`
+          );
+        }
+      }
+    }
 
-            if (!addPlace(petriNet, place)) {
-              this.toastr.warning(
-                `File contains duplicate places`,
-                `Duplicate places are ignored`
-              );
-            }
-            break;
-          } else if (trimmedLine === arcsAttribute) {
-            currentParsingState = 'arcs';
-            break;
-          } else if (trimmedLine === transitionsAttribute) {
-            currentParsingState = 'transitions';
-            break;
-          } else {
-            errors.add(`Unable to parse file`);
-            this.toastr.error(`Error`, `Unable to parse file`);
-            return null;
-          }
-        case 'arcs':
-          if (
-            trimmedLine !== transitionsAttribute &&
-            trimmedLine !== placesAttribute
-          ) {
-            let source: string, target: string, weight: number;
-            const breakpoints: Breakpoint[] = [];
-
-            if (this.arcRegex.test(trimmedLine)) {
-              const match = this.arcRegex.exec(trimmedLine);
-
-              if (match) {
-                source = match[1];
-                target = match[2];
-                weight = Number(match[3]);
-              } else {
-                const splitLine = trimmedLine.split(' ');
-                source = splitLine[0];
-                target = splitLine[1];
-                weight = Number(splitLine[2]);
-              }
-
-              const elements = getElementsWithArcs(petriNet);
-              const parsedSource = elements.find(
-                (transition) => transition.id === source
-              );
-              const parsedTarget = elements.find(
-                (transition) => transition.id === target
-              );
-              if (!parsedSource || !parsedTarget) {
-                this.toastr.error(
-                  `An arc between ${source} and ${target} is invalid`,
-                  `Unable to parse file`
-                );
-                errors.add(`An arc between ${source} and ${target} is invalid`);
-                throw Error(
-                  `An arc between ${source} and ${target} is invalid`
-                );
-              }
-
-              const arc = {
-                weight: weight || 1,
-                source: source,
-                target: target,
-                breakpoints: breakpoints,
-              };
-              if (!addArc(petriNet, arc)) {
-                this.toastr.warning(
-                  `File contains duplicate arcs`,
-                  `Duplicate arcs are ignored`
-                );
-              }
-            } else {
-              this.toastr.warning(
-                `Invalid arcs are ignored`,
-                `File contains invalid arcs`
-              );
-            }
-            break;
-          } else if (trimmedLine === transitionsAttribute) {
-            currentParsingState = 'transitions';
-            break;
-          } else {
-            errors.add(`Unable to parse file`);
-            this.toastr.error(`Error`, `Unable to parse file`);
-            return null;
-          }
+    if (contentObject.marking !== undefined && typeof contentObject.marking === 'object') {
+      for (const p of Object.entries(contentObject.marking)) {
+        const place = petriNet.places.find(pp => pp.id === p[0]);
+        if (place === undefined) {
+          this.toastr.warning(
+            `The net does not contain a place with the id '${p[0]}'. Marking of this place will be ignored`,
+            `Malformed marking ignored`
+          );
+          continue;
+        }
+        if (p[1] < 0) {
+          this.toastr.warning(
+            `The marking of the place '${p[0]}' is negative.`,
+            `Malformed marking ignored`
+          );
+          continue;
+        }
+        place.marking = p[1];
       }
     }
 
@@ -401,34 +360,6 @@ export class ParserService {
     }
 
     return petriNet;
-  }
-
-  private parseTransition(trimmedLine: string): Transition {
-    const match = this.transitionRegex.exec(trimmedLine);
-    const id = match ? match[1] : trimmedLine;
-    const label = match ? match[2] || match[1] : trimmedLine;
-
-    return {
-      id,
-      label,
-      type: 'transition',
-      incomingArcs: [],
-      outgoingArcs: [],
-    };
-  }
-
-  private parsePlace(trimmedLine: string): Place {
-    const match = this.placeRegex.exec(trimmedLine);
-    const id = match ? match[1] : trimmedLine;
-    const tokens = match ? Number(match[2]) : 0;
-
-    return {
-      id,
-      type: 'place',
-      marking: isNaN(tokens) ? 0 : tokens,
-      incomingArcs: [],
-      outgoingArcs: [],
-    };
   }
 
   private addArcToPartialOrder(
