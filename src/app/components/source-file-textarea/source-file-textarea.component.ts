@@ -41,15 +41,11 @@ export class SourceFileTextareaComponent implements OnDestroy {
   netHint = '';
   logHint = '';
 
-  shouldShowSuggestions$: Observable<boolean>;
-
   constructor(
     private parserService: ParserService,
     private displayService: DisplayService,
     private uploadService: UploadService
   ) {
-    this.shouldShowSuggestions$ =
-      this.displayService.getShouldShowSuggestions();
 
     this.logTextarea = new FormControl<string | null>(null);
     this.petriNetTextarea = new FormControl<string>(emptyContent);
