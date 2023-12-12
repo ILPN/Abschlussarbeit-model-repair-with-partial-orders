@@ -1,6 +1,6 @@
 <mat-form-field appearance="outline" class="textarea" [matTooltip]="logHint">
   <mat-label class="input-label">
-    <span>Log</span>
+    <span>Specification</span>
     <ng-container [ngSwitch]="logValidationStatus">
       <mat-icon *ngSwitchCase="'success'" class="color_success">
         check_circle
@@ -28,7 +28,7 @@
   class="textarea"
   [matTooltip]="netHint">
   <mat-label class="input-label">
-    <span>Petri net</span>
+    <span>Model</span>
     <ng-container [ngSwitch]="netValidationStatus">
       <mat-icon *ngSwitchCase="'success'" class="color_success">
         check_circle

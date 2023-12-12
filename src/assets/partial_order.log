@@ -1,0 +1,23 @@
+.type log
+.attributes
+case-id
+event-id
+concept:name
+follows[]
+.events
+1 e1 GrindBeans []
+1 e2 UnlockCoffeeMachine []
+1 e3 EmptyStrainer [e2]
+1 e4 FillStrainer [e1,e3]
+1 e5 CleanCoffeePot [e2]
+1 e6 GetWaterWithCoffeePot [e5]
+1 e7 FillKettle [e6]
+1 e8 AssembleAndTurnOn [e4,e7]
+2 e1 GrindBeans []
+2 e2 UnlockCoffeeMachine []
+2 e3 GetWaterWithGlassPot []
+2 e4 EmptyStrainer [e2]
+2 e5 FillStrainer [e1,e4]
+2 e6 FillKettle [e2, e3]
+2 e7 CleanCoffeePot [e2]
+2 e8 AssembleAndTurnOn [e5, e6, e7]

@@ -130,8 +130,12 @@ export class ParserService {
             }
 
             const caseId = Number(match[caseIdIndex]);
-            const conceptName = match[conceptNameIndex];
-            const eventId = match[eventIdIndex];
+            let conceptName = match[conceptNameIndex];
+            let eventId: string | undefined = match[eventIdIndex];
+            if (conceptName === undefined && eventId !== undefined) {
+              conceptName = eventId;
+              eventId = undefined;
+            }
 
             const isPartialOrder =
               followsIndex !== -1 &&

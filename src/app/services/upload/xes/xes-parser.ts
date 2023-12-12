@@ -4,8 +4,8 @@ import { XesEvent, XesWrapper } from './xes.model';
 export const LOG_HEADER = `.type log
 .attributes
 case-id
-concept:name
 event-id
+concept:name
 follows[]
 .events`;
 
@@ -32,7 +32,7 @@ export function parseXesFileToCustomLogFormat(xmlContent: string): string {
       }
 
       const replacedEventName = eventName.replace(/\s/g, '_');
-      text += `\n${traceId} ${replacedEventName} ${j}`;
+      text += `\n${traceId} ${j} ${replacedEventName}`;
     }
   }
 
