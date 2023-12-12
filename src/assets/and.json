@@ -1,9 +1,16 @@
 {
-  "places": ["p0","p1"],
+  "places": [
+    "p0",
+    "p1"
+  ],
   "marking": {
     "p0": 1
   },
-  "transitions": ["a", "b", "c"],
+  "transitions": [
+    "a",
+    "b",
+    "c"
+  ],
   "arcs": {
     "p0,a": 1,
     "a,p1": 1,
