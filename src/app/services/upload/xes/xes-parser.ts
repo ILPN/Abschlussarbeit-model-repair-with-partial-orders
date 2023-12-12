@@ -1,7 +1,7 @@
 import { parseXml } from '../xml-parser.fn';
-import { XesEvent, XesString, XesTrace, XesWrapper } from './xes.model';
+import { XesEvent, XesWrapper } from './xes.model';
 
-const logStart = `.type log
+export const LOG_HEADER = `.type log
 .attributes
 case-id
 concept:name
@@ -13,7 +13,7 @@ export function parseXesFileToCustomLogFormat(xmlContent: string): string {
   const xes: XesWrapper = parseXml(xmlContent);
   const traces = xes.log.trace;
 
-  let text = logStart;
+  let text = LOG_HEADER;
 
   for (let i = 0; i < traces.length; i++) {
     const trace = traces[i];
@@ -44,7 +44,7 @@ function xesFind(stringsContainer: XesEvent, key: string): string | undefined {
     return stringsContainer.string.find((s) => s.key === key)?.value;
   } else {
     if (stringsContainer.string['key'] === key) {
-      return  stringsContainer.string['value'];
+      return stringsContainer.string['value'];
     }
   }
   return undefined;

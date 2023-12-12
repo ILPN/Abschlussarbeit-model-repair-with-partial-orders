@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { catchError, forkJoin, map, Observable, of, ReplaySubject, Subject, take } from 'rxjs';
-import { netTypeKey } from '../parser/parsing-constants';
+import { logTypeKey } from '../parser/parsing-constants';
 import { getRunTextFromPnml } from './pnml/pnml-to-run.fn';
 import { parseXesFileToCustomLogFormat } from './xes/xes-parser';
 import { HttpClient } from '@angular/common/http';
@@ -136,10 +136,10 @@ export class UploadService {
   }
 
   private processNewSource(newSource: string, signal$?: ReplaySubject<void>): void {
-    if (newSource.trim().startsWith(netTypeKey)) {
-      this.currentNetUpload$.next(newSource);
-    } else {
+    if (newSource.trim().startsWith(logTypeKey)) {
       this.currentLogUpload$.next(newSource);
+    } else {
+      this.currentNetUpload$.next(newSource);
     }
     signal$?.next();
     signal$?.complete();
