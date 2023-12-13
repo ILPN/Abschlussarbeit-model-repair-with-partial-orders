@@ -12,10 +12,6 @@
     "p10",
     "p11"
   ],
-  "marking": {
-    "p1": 1,
-    "p2": 1
-  },
   "transitions": [
     "GrindBeans",
     "EmptyStrainer",
@@ -50,5 +46,9 @@
     "p11,AssembleAndTurnOn": 1,
     "p9,GetWaterWithGlassPot": 1,
     "GetWaterWithGlassPot,p10": 1
+  },
+  "marking": {
+    "p1": 1,
+    "p2": 1
   }
 }
