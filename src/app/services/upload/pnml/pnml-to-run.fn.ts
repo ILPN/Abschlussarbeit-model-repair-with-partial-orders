@@ -43,8 +43,7 @@ export function getRunTextFromPnml(xmlContent: string): string {
       netObject.arcs = {};
     }
 
-    // TODO import/export arc weights
-    netObject.arcs[`${s},${t}`] = 1;
+    netObject.arcs[`${s},${t}`] = arc?.inscription?.text ?? 1;
   });
 
   return generateTextFromNetJsonObject(netObject);
