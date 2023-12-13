@@ -69,7 +69,7 @@ export class SourceFileTextareaComponent implements OnDestroy {
 
     this._fileSub = this.uploadService
       .getLogUpload$()
-      .subscribe((content) => this.logTextarea.setValue(this.enforceLogFileFormat(content)));
+      .subscribe((content) => this.logTextarea.setValue(content));
 
     combineLatest([
       this.displayService.getPetriNet$(),
@@ -103,7 +103,7 @@ export class SourceFileTextareaComponent implements OnDestroy {
       this.displayService.setNewNet(result, errors);
     } else {
       const errors = new Set<string>();
-      const result = this.parserService.parsePartialOrders([LOG_HEADER,newSource].join('\n'), errors);
+      const result = this.parserService.parsePartialOrders(newSource, errors);
 
       this.updateValidationForLog(result, errors);
       if (!result) return;
@@ -142,14 +142,5 @@ export class SourceFileTextareaComponent implements OnDestroy {
     } else {
       this.logValidationStatus = null;
     }
-  }
-
-  private enforceLogFileFormat(logContent: string): string {
-    const lines = logContent.split('\n');
-    while (lines[0] !== '.events') {
-      lines.shift();
-    }
-    lines.shift();
-    return lines.join('\n');
   }
 }

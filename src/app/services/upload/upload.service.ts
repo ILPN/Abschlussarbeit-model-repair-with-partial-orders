@@ -9,8 +9,8 @@ import { HttpClient } from '@angular/common/http';
 export type StructureType = 'petri-net' | 'log';
 
 const allowedExtensions: { [key in StructureType]: string[] } = {
-  'petri-net': ['pn', 'pnml'],
-  log: ['txt', 'log', 'xes']
+  'petri-net': ['json', 'pnml'],
+  log: ['json', 'xes']
 };
 
 interface LinkContent {
@@ -136,7 +136,7 @@ export class UploadService {
   }
 
   private processNewSource(newSource: string, signal$?: ReplaySubject<void>): void {
-    if (newSource.trim().startsWith(logTypeKey)) {
+    if (newSource.trim().startsWith('[')) {
       this.currentLogUpload$.next(newSource);
     } else {
       this.currentNetUpload$.next(newSource);

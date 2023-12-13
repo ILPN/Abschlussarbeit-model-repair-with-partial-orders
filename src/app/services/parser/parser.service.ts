@@ -16,19 +16,8 @@ import {
 } from '../../classes/diagram/partial-order';
 import { PetriNet } from '../../classes/diagram/petri-net';
 import { concatEvents } from '../../classes/diagram/transition';
-import {
-  attributesAttribute,
-  caseIdAttribute,
-  conceptNameAttribute,
-  eventIdAttribute,
-  eventsAttribute,
-  followsAttribute,
-  logTypeKey,
-  netTypeKey,
-} from './parsing-constants';
 import { JsonPetriNet } from './json-petri-net';
-
-type LogParsingStates = 'initial' | 'type' | 'attributes' | 'events';
+import { JsonLog } from '../../classes/json-log';
 
 @Injectable({
   providedIn: 'root'
@@ -40,155 +29,95 @@ export class ParserService {
   private readonly logEventRegex = /^(\S+)\s*(\S+)\s*(\S+)?\s*(.*)$/;
 
   parsePartialOrders(content: string, errors: Set<string>): PartialOrder[] {
-    const contentLines = content.split('\n');
+    this.toastr.toasts.forEach((t) => {
+      this.toastr.remove(t.toastId);
+    });
 
-    let currentParsingState: LogParsingStates = 'initial';
-
-    let caseIdIndex = 0;
-    let conceptNameIndex = 1;
-    let eventIdIndex = -1;
-    let followsIndex = -1;
-    let attributesCounter = 1;
-
-    let currentCaseId: number | undefined;
+    let contentObject: JsonLog;
+    try {
+      contentObject = JSON.parse(content);
+    } catch (e) {
+      errors.add(
+        `The provided log file is not a JSON. [${(e as SyntaxError).name}]: ${(e as SyntaxError).message}`
+      );
+      this.toastr.error(
+        'The provided log file is not a JSON.',
+        'Unable to parse file'
+      );
+      return [];
+    }
 
     const returnList: PartialOrder[] = [];
-    let currentPartialOrder: PartialOrder | undefined;
-    let lastCaseId: string | undefined;
+    traceLoop:
+    for (let ti = 0; ti < contentObject.length; ti++) {
+      const tr = contentObject[ti];
 
-    for (const line of contentLines) {
-      const trimmedLine = line.trim();
-      if (trimmedLine === '') {
+      if (tr.trace === undefined || !Array.isArray(tr.trace)) {
+        this.toastr.warning(
+          `Trace at index ${ti} is malformed and will be skipped`,
+          'Malformed trace in file'
+        );
         continue;
       }
 
-      switch (currentParsingState) {
-        case 'initial':
-          if (trimmedLine === logTypeKey) {
-            currentParsingState = 'type';
-          } else {
-            errors.add(
-              `The type of the file with the net has to be '` + netTypeKey + `'`
-            );
-            this.toastr.error(
-              `The type has to be '` + netTypeKey + `'`,
-              `Unable to parse file`
-            );
-            return [];
-          }
-          break;
-        case 'type':
-          if (trimmedLine === attributesAttribute) {
-            currentParsingState = 'attributes';
-            break;
-          } else {
-            errors.add(`The log contains invalid parts`);
-            this.toastr.error(
-              `The log contains invalid parts. '${trimmedLine}' is not a valid attribute`,
-              `Unable to parse log`
-            );
-            return [];
-          }
-        case 'attributes':
-          if (trimmedLine !== eventsAttribute) {
-            if (trimmedLine === caseIdAttribute) {
-              caseIdIndex = attributesCounter;
-            } else if (trimmedLine === conceptNameAttribute) {
-              conceptNameIndex = attributesCounter;
-            } else if (trimmedLine === eventIdAttribute) {
-              eventIdIndex = attributesCounter;
-            } else if (trimmedLine === followsAttribute) {
-              followsIndex = attributesCounter;
-            }
-            attributesCounter++;
-            break;
-          } else if (trimmedLine === eventsAttribute) {
-            currentParsingState = 'events';
-            break;
-          } else {
-            errors.add(`The log contains invalid parts`);
-            this.toastr.error(
-              `The log contains invalid parts. '${trimmedLine}' is not a valid attribute`,
-              `Unable to parse log`
-            );
-            return [];
-          }
-        case 'events':
-          if (trimmedLine !== eventsAttribute) {
-            const match = this.logEventRegex.exec(trimmedLine);
-            if (!match) {
-              break;
-            }
+      const currentPartialOrder: PartialOrder = {
+        arcs: [],
+        events: []
+      };
 
-            const caseId = Number(match[caseIdIndex]);
-            let conceptName = match[conceptNameIndex];
-            let eventId: string | undefined = match[eventIdIndex];
-            if (conceptName === undefined && eventId !== undefined) {
-              conceptName = eventId;
-              eventId = undefined;
-            }
+      for (let i = 0; i < tr.trace.length; i++) {
+        const e = tr.trace[i];
+        if (typeof e !== 'string') {
+          this.toastr.warning(
+            `Trace at index ${ti} has a malformed event at index ${i} and will be skipped`,
+            'Malformed trace in file'
+          );
+          continue traceLoop;
+        }
 
-            const isPartialOrder =
-              followsIndex !== -1 &&
-              match[followsIndex].includes('[') &&
-              match[followsIndex].includes(']');
-            const follows =
-              followsIndex === -1
-                ? []
-                : match[followsIndex]
-                  .replace('[', '')
-                  .replace(']', '')
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter((s) => !!s);
-
-            if (currentCaseId !== caseId) {
-              if (currentPartialOrder) {
-                determineInitialAndFinalEvents(currentPartialOrder);
-                returnList.push(currentPartialOrder);
-              }
-
-              lastCaseId = undefined;
-              currentCaseId = caseId;
-              currentPartialOrder = {
-                arcs: [],
-                events: []
-              };
-            }
-
-            const id = addEventItem(
-              currentPartialOrder,
-              generateEventItem(eventId ?? conceptName, conceptName)
-            );
-            if (lastCaseId || isPartialOrder) {
-              if (isPartialOrder) {
-                follows.forEach((follow) => {
-                  this.addArcToPartialOrder(currentPartialOrder, {
-                    target: id,
-                    source: follow,
-                    weight: 1,
-                    breakpoints: []
-                  });
-                });
-              } else if (lastCaseId) {
-                this.addArcToPartialOrder(currentPartialOrder, {
-                  target: id,
-                  source: lastCaseId,
-                  weight: 1,
-                  breakpoints: []
-                });
-              }
-            }
-            lastCaseId = id;
-            break;
-          } else {
-            errors.add(`Unable to parse log`);
-            this.toastr.error(`Unable to parse log`, 'Error');
-            return [];
-          }
+        addEventItem(
+          currentPartialOrder,
+          generateEventItem(`${i}`, e)
+        )
       }
-    }
-    if (currentPartialOrder) {
+
+      if (tr.order !== undefined) {
+        if (!Array.isArray(tr.order)) {
+          this.toastr.warning(
+            `Trace at index ${ti} has malformed order information and will be skipped`,
+            'Malformed trace in file'
+          );
+          continue;
+        }
+
+        for (let ai = 0; ai < tr.order.length; ai++) {
+          const arc = tr.order[ai];
+          if (!Array.isArray(arc) || arc.length !== 2 || typeof arc[0] !== 'number' || typeof arc[1] !== 'number' || Math.min(...arc) < 0 || Math.max(...arc) >= currentPartialOrder.events.length) {
+            this.toastr.warning(
+              `Trace at index ${ti} has a malformed oder information at index ${ai} and will be skipped`,
+              'Malformed trace in file'
+            );
+            continue traceLoop;
+          }
+
+          this.addArcToPartialOrder(currentPartialOrder, {
+            target: `${arc[1]}`,
+            source: `${arc[0]}`,
+            weight: 1,
+            breakpoints: []
+          });
+        }
+      } else {
+        for (let ei = 1; ei < currentPartialOrder.events.length; ei++) {
+          this.addArcToPartialOrder(currentPartialOrder, {
+            target: `${ei}`,
+            source: `${ei-1}`,
+            weight: 1,
+            breakpoints: []
+          });
+        }
+      }
+
       determineInitialAndFinalEvents(currentPartialOrder);
       returnList.push(currentPartialOrder);
     }
