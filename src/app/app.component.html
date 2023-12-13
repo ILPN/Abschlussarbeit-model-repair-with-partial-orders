@@ -4,10 +4,11 @@
   ><h1>I <span class="red">❤</span> Petri Nets</h1></a
   >
   <p>
-    With this tool you can check whether a Petri net can be enabled by your
-    log(s). <br />
-    You will see which places are not enabled and you will receive
-    recommendations to solve the issues.
+    Automatic correction of Petri net models based on partially ordered specification.
+    <br />
+    This tool was developed as part of his master thesis by Nico Lueg.
+    <br />
+    The tool was adapted for <i>Autokorrektur von Petrinetzen mithilfe von halbgeordneten Verhaltensdaten</i> by R. Bergenthum, J. Kovář and N. Lueg and submitted to Modellierung 2024.
   </p>
 
   <section class="toggle-section">
@@ -16,7 +17,7 @@
       color="primary"
       (change)="changeToggle($event)"
     >
-      Activate me for repair suggestions!
+      Show repair suggestions
     </mat-slide-toggle>
   </section>
 
@@ -74,7 +75,7 @@
 
       <div class="button-row">
         <app-template-button
-          buttonText="Upload new net or log"
+          buttonText="Upload model and specification"
           buttonIcon="upload"
           (buttonAction)="openFileSelector(undefined)"
           (dropAction)="dropFiles($event, undefined)"
