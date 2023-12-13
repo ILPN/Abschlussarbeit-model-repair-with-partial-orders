@@ -7,13 +7,11 @@ import {
   Observable,
   Subscription,
 } from 'rxjs';
-
 import { PartialOrder } from '../../classes/diagram/partial-order';
 import { isNetEmpty, PetriNet } from '../../classes/diagram/petri-net';
 import { DisplayService } from '../../services/display.service';
 import { ParserService } from '../../services/parser/parser.service';
 import { UploadService } from '../../services/upload/upload.service';
-import { LOG_HEADER } from '../../services/upload/xes/xes-parser';
 
 type Valid = 'error' | 'warn' | 'success';
 

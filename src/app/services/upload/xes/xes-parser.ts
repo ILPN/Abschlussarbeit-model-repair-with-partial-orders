@@ -1,28 +1,23 @@
+import { JsonLog, JsonTrace } from '../../../classes/json-log';
 import { parseXml } from '../xml-parser.fn';
 import { XesEvent, XesWrapper } from './xes.model';
 
-export const LOG_HEADER = `.type log
-.attributes
-case-id
-event-id
-concept:name
-follows[]
-.events`;
 
 export function parseXesFileToCustomLogFormat(xmlContent: string): string {
   const xes: XesWrapper = parseXml(xmlContent);
   const traces = xes.log.trace;
 
-  let text = LOG_HEADER;
+  const logObject: JsonLog = [];
 
   for (let i = 0; i < traces.length; i++) {
     const trace = traces[i];
-    const traceId = xesFind(trace, 'concept:name') ?? i;
 
     const filteredEvents = trace.event.filter((event) => {
       const lifecycle = xesFind(event, 'lifecycle:transition');
       return lifecycle === undefined || lifecycle === 'complete';
     });
+
+    const traceObject: JsonTrace = {trace: []};
 
     for (let j = 0; j < filteredEvents.length; j++) {
       const event = trace.event[j];
@@ -32,11 +27,13 @@ export function parseXesFileToCustomLogFormat(xmlContent: string): string {
       }
 
       const replacedEventName = eventName.replace(/\s/g, '_');
-      text += `\n${traceId} ${j} ${replacedEventName}`;
+      traceObject.trace.push(replacedEventName);
     }
+
+    logObject.push(traceObject);
   }
 
-  return text;
+  return JSON.stringify(logObject, null, 4);
 }
 
 function xesFind(stringsContainer: XesEvent, key: string): string | undefined {
