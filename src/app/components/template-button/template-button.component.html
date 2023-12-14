@@ -4,15 +4,15 @@
     class="interactive-square"
     fxLayout="row"
     fxLayoutAlign="center center"
+    fxFlex="nogrow"
     (click)="processMouseClick()"
     (mouseenter)="hoverStart($event)"
     (mouseleave)="hoverEnd($event)"
     (drop)="processDrop($event)"
     (dragover)="dragStart($event)"
     (dragleave)="dragEnd($event)"
+    [ngStyle]="{'color': resolveSquareColor()}"
   >
-    <mat-icon class="larger-icon {{ styleClass }}">
-      {{ buttonIcon }}
-    </mat-icon>
+      {{ resolveSquareContent() }}
   </div>
 </div>

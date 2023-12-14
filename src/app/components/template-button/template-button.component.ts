@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { FileDisplay } from '../ilpn/file-display';
 
 @Component({
   selector: 'app-template-button',
@@ -8,7 +9,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 export class TemplateButtonComponent {
   @Input() styleClass?: string;
   @Input() buttonText: string | undefined;
-  @Input() buttonIcon: string | undefined;
+  @Input() buttonContent?: string | FileDisplay;
   @Output() buttonAction = new EventEmitter<void>();
   @Output() dropAction = new EventEmitter<DragEvent>();
 
@@ -51,5 +52,19 @@ export class TemplateButtonComponent {
     this.prevent(e);
     const target = e.target as HTMLElement;
     target.classList.remove('drag-hover');
+  }
+
+  resolveSquareContent(): string {
+    if (typeof this.buttonContent === 'object') {
+      return this.buttonContent.icon;
+    }
+    return this.buttonContent ?? '?';
+  }
+
+  resolveSquareColor(): string {
+    if (typeof this.buttonContent === 'object') {
+      return this.buttonContent.color;
+    }
+    return 'black';
   }
 }
