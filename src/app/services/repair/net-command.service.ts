@@ -127,7 +127,13 @@ function generateTextForNetWithTransition(
   while (petriNet.places.find((t) => t.id === placeId)) {
     placeId += '_';
   }
-  generatePlaceForSolution(placeId, 0, solution, netObject);
+  netObject.places.push(placeId);
+  if ('newMarking' in solution && (solution?.newMarking ?? 0 > 0)) {
+    if (netObject.marking === undefined) {
+      netObject.marking = {};
+    }
+    netObject.marking[placeId] = solution.newMarking as number;
+  }
 
   generateArcsForSolution(
     placeId,
