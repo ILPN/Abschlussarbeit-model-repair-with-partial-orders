@@ -143,7 +143,7 @@ const solutionTypeToText: { [key in SolutionType]: string } = {
 };
 
 function getSubLabel(solution: { regionSize: number }): string {
-  return `<span>Solution size: ${solution.regionSize}</span>`;
+  return `<span>Size: ${solution.regionSize}</span>`;
 }
 
 function generateBaseText(
