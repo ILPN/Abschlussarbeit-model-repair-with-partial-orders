@@ -13,6 +13,13 @@
     justify-content: space-between;
   }
 
+  .hover-container {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background-color: #fffffff3;
+  }
+
   .inner-container {
     display: flex;
     align-items: flex-start;
