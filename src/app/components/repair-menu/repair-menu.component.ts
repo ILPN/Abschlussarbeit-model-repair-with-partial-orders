@@ -73,7 +73,11 @@ export class RepairMenuComponent implements OnInit {
         this.placeSolution.missingTokens
       } missing ${
         this.placeSolution.missingTokens === 1 ? 'token' : 'tokens'
-      } | disables ${this.placeSolution.invalidTraceCount} trace${this.placeSolution.invalidTraceCount === 1 ? '' : 's'} (${percentage})<br/>`;
+      }<br>${
+        this.placeSolution.invalidTraceCount
+      } disabled trace${
+        this.placeSolution.invalidTraceCount === 1 ? '' : 's'
+      } (${percentage})<br/>`;
     }
 
     const solutions = this.placeSolution.solutions;
