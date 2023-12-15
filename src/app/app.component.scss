@@ -15,10 +15,6 @@
         text-align: center;
     }
 
-    a {
-        text-decoration: none;
-    }
-
     a:visited {
         color: black;
     }
@@ -98,4 +94,19 @@
 
 .top-margin {
   margin-top: 16px;
+}
+
+a {
+  color: black;
+  text-decoration: underline;
+  font-style: italic;
+}
+
+a:visited {
+  color: black;
+}
+
+a.title {
+  text-decoration: none;
+  font-style: normal;
 }
