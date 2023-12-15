@@ -77,13 +77,14 @@
         <app-template-button
           buttonText="Upload model and specification"
           buttonContent="🦮"
+          class="top-margin"
           (buttonAction)="openFileSelector(undefined)"
           (dropAction)="dropFiles($event, undefined)"
         ></app-template-button>
 
         <app-source-file-textarea></app-source-file-textarea>
 
-        <app-download></app-download>
+        <app-download class="top-margin"></app-download>
       </div>
     </div>
 
