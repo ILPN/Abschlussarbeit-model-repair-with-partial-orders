@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { first, map, Observable, Subject, take } from 'rxjs';
 import { DisplayService } from './services/display.service';
@@ -6,6 +6,7 @@ import { NetCommandService } from './services/repair/net-command.service';
 import { StructureType, UploadService } from './services/upload/upload.service';
 import { FD_LOG } from './components/ilpn/file-display';
 import { DescriptiveLinkComponent } from './components/ilpn/descriptive-link/descriptive-link.component';
+import { APP_BASE_HREF } from '@angular/common';
 
 @Component({
   selector: 'app-root',
@@ -26,7 +27,8 @@ export class AppComponent implements OnInit, AfterViewInit {
   constructor(
     private displayService: DisplayService,
     private uploadService: UploadService,
-    public netCommandService: NetCommandService
+    public netCommandService: NetCommandService,
+    @Inject(APP_BASE_HREF) public baseHref: string
   ) {
     this.partialOrderCount$ = displayService
       .getPartialOrders$()
@@ -87,5 +89,9 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   changeToggle(event: MatSlideToggleChange): void {
     this.displayService.setShouldShowSuggestions(event.checked);
+  }
+
+  thesisLink(): string {
+    return this.baseHref + 'assets/Nico Lueg - Model Repair von Geschäftsprozessmodellen mit Partiell Geordneten Event-Logs.pdf';
   }
 }
