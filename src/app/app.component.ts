@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { first, map, Observable, Subject, take } from 'rxjs';
+import { combineLatest, map, Observable, Subject, take } from 'rxjs';
 import { DisplayService } from './services/display.service';
 import { NetCommandService } from './services/repair/net-command.service';
 import { StructureType, UploadService } from './services/upload/upload.service';
@@ -11,14 +11,13 @@ import { APP_BASE_HREF } from '@angular/common';
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+  styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit, AfterViewInit {
   fdLog = FD_LOG;
 
   hasPartialOrders = false;
   isCurrentNetEmpty$: Observable<boolean>;
-  partialOrderCount$: Observable<{ count: number }>;
   resetPositioningSubject: Subject<void> = new Subject<void>();
   shouldShowSuggestions$: Observable<boolean>;
 
@@ -30,15 +29,17 @@ export class AppComponent implements OnInit, AfterViewInit {
     public netCommandService: NetCommandService,
     @Inject(APP_BASE_HREF) public baseHref: string
   ) {
-    this.partialOrderCount$ = displayService
-      .getPartialOrders$()
-      .pipe(map((pos) => ({ count: pos?.length ?? 0 })));
 
     this.isCurrentNetEmpty$ = displayService.isCurrentNetEmpty$();
 
     this.shouldShowSuggestions$ = displayService.getShouldShowSuggestions();
 
     window.onresize = () => this.resetSvgPositioning();
+  }
+
+  get hasPartialOrders$(): Observable<boolean> {
+    return this.displayService.getPartialOrders$()
+      .pipe(map((pos) => ((pos?.length ?? 0) > 0)));
   }
 
   resetSvgPositioning(): void {
@@ -52,39 +53,42 @@ export class AppComponent implements OnInit, AfterViewInit {
   dropFiles(event: DragEvent, type: StructureType | undefined): void {
     const linkData = event.dataTransfer?.getData(DescriptiveLinkComponent.DRAG_DATA_KEY);
     if (linkData) {
-      this.uploadService.uploadFilesFromLinks(linkData);
+      this.uploadService.uploadFilesFromLinks(linkData).pipe(take(1)).subscribe();
     } else if (event.dataTransfer?.files) {
       this.uploadService.uploadFiles(event.dataTransfer.files, type);
     }
   }
 
-  startEditing(count: number): void {
-    if (count > 0) {
-      this.hasPartialOrders = true;
-      setTimeout(() => this.resetSvgPositioning());
-    }
+  startEditing(): void {
+    this.hasPartialOrders = true;
+    setTimeout(() => this.resetSvgPositioning());
   }
 
   ngOnInit(): void {
-    this.partialOrderCount$
-      .pipe(first())
-      .subscribe((count) => this.startEditing(count.count));
+    combineLatest([
+      this.hasPartialOrders$,
+      this.isCurrentNetEmpty$
+    ]).subscribe(([pos, empty]) => {
+      if (pos && !empty) {
+        this.startEditing();
+      }
+    });
   }
 
   ngAfterViewInit(): void {
-    if (!this.firstExampleComp) {
-      return;
-    }
-
-    const fakeDrag = {dataTransfer: new DataTransfer()} as DragEvent;
-    this.firstExampleComp.addDragInformation(fakeDrag);
-
-    const signal$ = this.uploadService.uploadFilesFromLinks(fakeDrag.dataTransfer!.getData(DescriptiveLinkComponent.DRAG_DATA_KEY));
-
-    signal$.pipe(take(1)).subscribe(() => {
-      this.hasPartialOrders = true;
-      setTimeout(() => this.resetSvgPositioning());
-    });
+    // if (!this.firstExampleComp) {
+    //   return;
+    // }
+    //
+    // const fakeDrag = {dataTransfer: new DataTransfer()} as DragEvent;
+    // this.firstExampleComp.addDragInformation(fakeDrag);
+    //
+    // const signal$ = this.uploadService.uploadFilesFromLinks(fakeDrag.dataTransfer!.getData(DescriptiveLinkComponent.DRAG_DATA_KEY));
+    //
+    // signal$.pipe(take(1)).subscribe(() => {
+    //   this.hasPartialOrders = true;
+    //   setTimeout(() => this.resetSvgPositioning());
+    // });
   }
 
   changeToggle(event: MatSlideToggleChange): void {

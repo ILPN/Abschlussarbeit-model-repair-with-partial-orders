@@ -4,7 +4,7 @@
   ><h1>I <span class="red">❤</span> Petri Nets</h1></a
   >
   <p>
-    Repair a Petri net model based on a partially ordered specification.
+    Repair a Petri net model based on a partially ordered specification. <a href="https://link.springer.com/chapter/10.1007/978-3-030-76983-3_20">Fire</a> to identify errors. Adapt <a href="https://link.springer.com/chapter/10.1007/978-3-319-65000-5_2">synthesis</a> to make repair suggestions.
     <br />
     This tool was implemented by Nico Lueg as part of his <a [href]="thesisLink()" target="_blank">master thesis</a>. This tool is submitted as
     <br />
@@ -21,7 +21,7 @@
     </mat-slide-toggle>
   </section>
 
-    <div [style.display]="hasPartialOrders ? 'block' : 'none'">
+    <div [style.display]="((isCurrentNetEmpty$ | async) === false) && (hasPartialOrders$ | async) ? 'block' : 'none'">
       <main>
         <app-display
           class="padding full-size"
@@ -87,6 +87,20 @@
         <app-download class="top-margin"></app-download>
       </div>
     </div>
+
+  <div *ngIf="(isCurrentNetEmpty$ | async) || !hasPartialOrders">
+    <div class="initial-content-margin" fxLayout="column" fxLayoutAlign="center center">
+      <app-template-button
+        buttonText="Upload model and specification"
+        buttonContent="🦮"
+        class="top-margin initial-upload-btn-margin"
+        (buttonAction)="openFileSelector(undefined)"
+        (dropAction)="dropFiles($event, undefined)"
+      ></app-template-button>
+      <span *ngIf="isCurrentNetEmpty$ | async"><span class="inline-emoji red">♥</span> Missing a model in .PNML or in .JSON format <span class="inline-emoji red">♥</span></span>
+      <span *ngIf="(hasPartialOrders$ | async) === false"><span class="inline-emoji">★</span> Missing a specification in .XES or in .JSON format <span class="inline-emoji">★</span></span>
+    </div>
+  </div>
 
   <div>
     <div fxLayout="row wrap" fxLayoutAlign="start start" fxLayout.sm="column" fxLayoutAlign.sm="space-between center">

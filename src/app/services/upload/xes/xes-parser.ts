@@ -20,7 +20,7 @@ export function parseXesFileToCustomLogFormat(xmlContent: string): string {
     const traceObject: JsonTrace = {trace: []};
 
     for (let j = 0; j < filteredEvents.length; j++) {
-      const event = trace.event[j];
+      const event = filteredEvents[j];
       const eventName = xesFind(event, 'concept:name');
       if (!eventName) {
         throw Error(`Event name is not defined in trace ${i} and event ${j}!`);
