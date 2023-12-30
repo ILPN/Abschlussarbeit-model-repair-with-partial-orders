@@ -98,4 +98,8 @@ export class AppComponent implements OnInit, AfterViewInit {
   thesisLink(): string {
     return this.baseHref + 'assets/Nico Lueg - Model Repair von Geschäftsprozessmodellen mit Partiell Geordneten Event-Logs.pdf';
   }
+
+  paperLink(): string {
+    return this.baseHref + 'assets/GuideDog_Modellierung2024_Bergenthum_Kovar_Lueg.pdf';
+  }
 }
