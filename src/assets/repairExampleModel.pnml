@@ -225,7 +225,7 @@
         <graphics/>
         <inscription/>
       </arc>
-      <arc id="arc17" source="Restart_Repair" target="p7">
+      <arc id="arc17" source="Restart_Repair" target="p0">
         <graphics/>
         <inscription/>
       </arc>
