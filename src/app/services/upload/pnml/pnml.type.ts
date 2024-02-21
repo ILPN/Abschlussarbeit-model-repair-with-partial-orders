@@ -15,6 +15,9 @@ export type PnmlPage = {
 type PnmlArc = {
   source: string;
   target: string;
+  inscription: {
+    text: number;
+  };
 };
 
 type PnmlPlace = {

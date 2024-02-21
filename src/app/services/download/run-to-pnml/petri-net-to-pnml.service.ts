@@ -77,7 +77,7 @@ function parseArcs(petriNet: PetriNet): string {
       (arc) => `               <arc id="A"
                     source="${arc.source}" target="${arc.target}">
                     <inscription>
-                        <text>1</text>
+                        <text>${arc.weight}</text>
                     </inscription>
                     <graphics/>
                </arc>`

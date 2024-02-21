@@ -1,32 +1,40 @@
 import { PetriNet } from '../../classes/diagram/petri-net';
-import {
-  arcsAttribute,
-  netTypeKey,
-  placesAttribute,
-  transitionsAttribute,
-} from './parsing-constants';
+import { JsonPetriNet } from './json-petri-net';
 
-export function generateTextFromNet(petriNet: PetriNet): string {
-  let newText = `${netTypeKey}\n${transitionsAttribute}\n`;
-  petriNet.transitions.forEach((transition) => {
-    newText += `${transition.id} ${transition.label}\n`;
+export function generateJsonObjectFromNet(petriNet: PetriNet): JsonPetriNet {
+  const netObject: JsonPetriNet = {
+    transitions: [],
+    places: [],
+  };
+
+  petriNet.transitions.forEach(t => {
+    netObject.transitions.push(t.id);
   });
 
-  newText += `${placesAttribute}\n`;
-  petriNet.places.forEach((place) => {
-    newText += `${place.id} ${place.marking}\n`;
-  });
-
-  newText += `${arcsAttribute}\n`;
-  petriNet.arcs.forEach((arc, index) => {
-    newText += `${arc.source} ${arc.target}${
-      arc.weight > 1 ? ` ${arc.weight}` : ''
-    }`;
-
-    if (index !== petriNet.arcs.length - 1) {
-      newText += '\n';
+  petriNet.places.forEach(p => {
+    netObject.places.push(p.id);
+    if (p.marking > 0) {
+      if (netObject.marking === undefined) {
+        netObject.marking = {};
+      }
+      netObject.marking[p.id] = p.marking;
     }
   });
 
-  return newText;
+  petriNet.arcs.forEach(a => {
+    if (netObject.arcs === undefined) {
+      netObject.arcs = {};
+    }
+    netObject.arcs[`${a.source},${a.target}`] = a.weight;
+  });
+
+  return netObject;
+}
+
+export function generateTextFromNetJsonObject(petriNet: JsonPetriNet): string {
+  return JSON.stringify(petriNet,null,4);
+}
+
+export function generateTextFromNet(petriNet: PetriNet): string {
+  return generateTextFromNetJsonObject(generateJsonObjectFromNet(petriNet));
 }

@@ -1,53 +1,45 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
-import { saveAs } from 'file-saver';
-import JSZip from 'jszip';
-import { first, map, Observable, Subject } from 'rxjs';
-
+import { combineLatest, map, Observable, Subject, take } from 'rxjs';
 import { DisplayService } from './services/display.service';
 import { NetCommandService } from './services/repair/net-command.service';
-import {
-  andLog,
-  andPetriNet,
-  coffeeMachineLog,
-  coffeeMachineNet,
-  loopLog,
-  loopPetriNet,
-  skipLog,
-  skipNet,
-} from './services/upload/simple-example/evaluation/evaluation';
-import {
-  simpleExampleLog,
-  simpleExamplePetriNet,
-} from './services/upload/simple-example/simple-example-texts';
 import { StructureType, UploadService } from './services/upload/upload.service';
+import { FD_LOG } from './components/ilpn/file-display';
+import { DescriptiveLinkComponent } from './components/ilpn/descriptive-link/descriptive-link.component';
+import { APP_BASE_HREF } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+  styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, AfterViewInit {
+  fdLog = FD_LOG;
+
   hasPartialOrders = false;
   isCurrentNetEmpty$: Observable<boolean>;
-  partialOrderCount$: Observable<{ count: number }>;
   resetPositioningSubject: Subject<void> = new Subject<void>();
   shouldShowSuggestions$: Observable<boolean>;
+
+  @ViewChild('firstExample') firstExampleComp: DescriptiveLinkComponent | undefined;
 
   constructor(
     private displayService: DisplayService,
     private uploadService: UploadService,
-    public netCommandService: NetCommandService
+    public netCommandService: NetCommandService,
+    @Inject(APP_BASE_HREF) public baseHref: string
   ) {
-    this.partialOrderCount$ = displayService
-      .getPartialOrders$()
-      .pipe(map((pos) => ({ count: pos?.length ?? 0 })));
 
     this.isCurrentNetEmpty$ = displayService.isCurrentNetEmpty$();
 
     this.shouldShowSuggestions$ = displayService.getShouldShowSuggestions();
 
     window.onresize = () => this.resetSvgPositioning();
+  }
+
+  get hasPartialOrders$(): Observable<boolean> {
+    return this.displayService.getPartialOrders$()
+      .pipe(map((pos) => ((pos?.length ?? 0) > 0)));
   }
 
   resetSvgPositioning(): void {
@@ -59,76 +51,55 @@ export class AppComponent implements OnInit {
   }
 
   dropFiles(event: DragEvent, type: StructureType | undefined): void {
-    if (event.dataTransfer?.files) {
+    const linkData = event.dataTransfer?.getData(DescriptiveLinkComponent.DRAG_DATA_KEY);
+    if (linkData) {
+      this.uploadService.uploadFilesFromLinks(linkData).pipe(take(1)).subscribe();
+    } else if (event.dataTransfer?.files) {
       this.uploadService.uploadFiles(event.dataTransfer.files, type);
     }
   }
 
-  startEditing(count: number): void {
-    if (count > 0) {
-      this.hasPartialOrders = true;
-      setTimeout(() => this.resetSvgPositioning());
-    }
-  }
-
-  downloadExample(): void {
-    const zip = new JSZip();
-    zip.file('simple-example-net.pn', simpleExamplePetriNet);
-    zip.file('simple-example-log.log', simpleExampleLog);
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      saveAs(content, 'simple-example.zip');
-    });
-  }
-
-  downloadEvaluationFiles(): void {
-    const zip = new JSZip();
-
-    const andFolder = zip.folder('1 - and');
-    andFolder?.file('and.log', andLog);
-    andFolder?.file('and.pn', andPetriNet);
-
-    const loopFolder = zip.folder('2 - loop');
-    loopFolder?.file('loop.log', loopLog);
-    loopFolder?.file('loop.pn', loopPetriNet);
-
-    const eventSkipFolder = zip.folder('3 - event-skip');
-    eventSkipFolder?.file('event-skip.log', skipLog);
-    eventSkipFolder?.file('event-skip.pn', skipNet);
-
-    const coffeeMachine = zip.folder('4 - coffee-machine');
-    coffeeMachine?.file('coffee-machine.log', coffeeMachineLog);
-    coffeeMachine?.file('coffee-machine.pn', coffeeMachineNet);
-    coffeeMachine?.file(
-      '1-halbordnung.png',
-      this.readFile('assets/1-halbordnung.png'),
-      {
-        binary: true,
-      }
-    );
-    coffeeMachine?.file(
-      '2-halbordnung.png',
-      this.readFile('assets/2-halbordnung.png'),
-      {
-        binary: true,
-      }
-    );
-
-    zip.generateAsync({ type: 'blob' }).then((content) => {
-      saveAs(content, 'evaluation.zip');
-    });
-  }
-
-  private readFile(filePath: string): Promise<Blob> {
-    return fetch(filePath).then((response) => response.blob());
+  startEditing(): void {
+    this.hasPartialOrders = true;
+    setTimeout(() => this.resetSvgPositioning());
   }
 
   ngOnInit(): void {
-    this.partialOrderCount$
-      .pipe(first())
-      .subscribe((count) => this.startEditing(count.count));
+    combineLatest([
+      this.hasPartialOrders$,
+      this.isCurrentNetEmpty$
+    ]).subscribe(([pos, empty]) => {
+      if (pos && !empty) {
+        this.startEditing();
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    // if (!this.firstExampleComp) {
+    //   return;
+    // }
+    //
+    // const fakeDrag = {dataTransfer: new DataTransfer()} as DragEvent;
+    // this.firstExampleComp.addDragInformation(fakeDrag);
+    //
+    // const signal$ = this.uploadService.uploadFilesFromLinks(fakeDrag.dataTransfer!.getData(DescriptiveLinkComponent.DRAG_DATA_KEY));
+    //
+    // signal$.pipe(take(1)).subscribe(() => {
+    //   this.hasPartialOrders = true;
+    //   setTimeout(() => this.resetSvgPositioning());
+    // });
   }
 
   changeToggle(event: MatSlideToggleChange): void {
     this.displayService.setShouldShowSuggestions(event.checked);
+  }
+
+  thesisLink(): string {
+    return this.baseHref + 'assets/Nico Lueg - Model Repair von Geschäftsprozessmodellen mit Partiell Geordneten Event-Logs.pdf';
+  }
+
+  paperLink(): string {
+    return this.baseHref + 'assets/GuideDog_Modellierung2024_Bergenthum_Kovar_Lueg.pdf';
   }
 }

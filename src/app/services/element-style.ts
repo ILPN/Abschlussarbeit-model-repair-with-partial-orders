@@ -39,3 +39,9 @@ export const TEXT_STYLE = {
   'pointer-events': 'none',
   style: 'user-select: none',
 };
+
+export const TOKEN_STYLE = {
+  r: '4',
+  'fill': 'black',
+  'fill-opacity': '1'
+};

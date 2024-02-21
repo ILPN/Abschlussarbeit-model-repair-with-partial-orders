@@ -1,0 +1,54 @@
+{
+  "places": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "p8",
+    "p9",
+    "p10",
+    "p11"
+  ],
+  "transitions": [
+    "GrindBeans",
+    "EmptyStrainer",
+    "FillStrainer",
+    "UnlockCoffeeMachine",
+    "CleanCoffeePot",
+    "GetWaterWithCoffeePot",
+    "GetWaterWithGlassPot",
+    "FillKettle",
+    "AssembleAndTurnOn"
+  ],
+  "arcs": {
+    "p1,GrindBeans": 1,
+    "GrindBeans,p3": 1,
+    "p3,FillStrainer": 1,
+    "FillStrainer,p4": 1,
+    "p4,AssembleAndTurnOn": 1,
+    "p2,UnlockCoffeeMachine": 1,
+    "UnlockCoffeeMachine,p5": 1,
+    "p5,EmptyStrainer": 1,
+    "EmptyStrainer,p6": 1,
+    "p6,FillStrainer": 1,
+    "UnlockCoffeeMachine,p7": 1,
+    "p7,CleanCoffeePot": 1,
+    "CleanCoffeePot,p8": 1,
+    "p8,AssembleAndTurnOn": 1,
+    "CleanCoffeePot,p9": 1,
+    "p9,GetWaterWithCoffeePot": 1,
+    "GetWaterWithCoffeePot,p10": 1,
+    "p10,FillKettle": 1,
+    "FillKettle,p11": 1,
+    "p11,AssembleAndTurnOn": 1,
+    "p9,GetWaterWithGlassPot": 1,
+    "GetWaterWithGlassPot,p10": 1
+  },
+  "marking": {
+    "p1": 1,
+    "p2": 1
+  }
+}

@@ -7,7 +7,6 @@ import {
   Observable,
   Subscription,
 } from 'rxjs';
-
 import { PartialOrder } from '../../classes/diagram/partial-order';
 import { isNetEmpty, PetriNet } from '../../classes/diagram/petri-net';
 import { DisplayService } from '../../services/display.service';
@@ -41,15 +40,11 @@ export class SourceFileTextareaComponent implements OnDestroy {
   netHint = '';
   logHint = '';
 
-  shouldShowSuggestions$: Observable<boolean>;
-
   constructor(
     private parserService: ParserService,
     private displayService: DisplayService,
     private uploadService: UploadService
   ) {
-    this.shouldShowSuggestions$ =
-      this.displayService.getShouldShowSuggestions();
 
     this.logTextarea = new FormControl<string | null>(null);
     this.petriNetTextarea = new FormControl<string>(emptyContent);

@@ -1,35 +1,5 @@
-<div
-  class="margin-spaces outer-container"
-  *ngIf="invalidPlaceCount$ | async as invalidPlaceCount"
->
-  <div class="inner-container" *ngIf="shouldShowSuggestions$ | async">
-    <div class="icon-with-text">
-      <ng-container *ngIf="invalidPlaceCount.count === 0">
-        <mat-icon class="color_success"> check_circle </mat-icon>
-        <span>All places are valid!</span>
-      </ng-container>
-      <ng-container *ngIf="invalidPlaceCount.count === 1">
-        <mat-icon class="color_error"> error_outline </mat-icon>
-        <span>{{ invalidPlaceCount.count }} invalid place found</span>
-      </ng-container>
-      <ng-container *ngIf="invalidPlaceCount.count > 1">
-        <mat-icon class="color_error"> error_outline </mat-icon>
-        <span>{{ invalidPlaceCount.count }} invalid place found</span>
-      </ng-container>
-    </div>
-  </div>
-
-  <div
-    [class.solutions-loading--visible]="computingSolutions"
-    class="solutions-loading"
-  >
-    Computing solutions ...
-  </div>
-
-  <ng-container *ngIf="transitionSolutions$ | async as transitionSolutions">
-    <div class="inner-container" *ngIf="tracesCount$ | async as tracesCount">
-      {{ tracesCount }} traces loaded
-    </div>
+<div #svg_wrapper>
+  <div class="margin-spaces hover-container" *ngIf="transitionSolutions$ | async as transitionSolutions">
     <ng-container *ngIf="transitionSolutions.length > 0">
       <div class="inner-container transition-solution-list">
         <div class="icon-with-text">
@@ -61,9 +31,6 @@
         </div>
       </div>
     </ng-container>
-  </ng-container>
-</div>
-
-<div #svg_wrapper>
+  </div>
   <app-canvas #canvas [layoutResult$]="layoutResult$"></app-canvas>
 </div>

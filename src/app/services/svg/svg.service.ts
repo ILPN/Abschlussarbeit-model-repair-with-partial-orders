@@ -13,8 +13,8 @@ import {
   ARC_STYLE,
   DRAG_POINT_STYLE,
   PLACE_STYLE,
-  TEXT_STYLE,
-  TRANSITION_STYLE,
+  TEXT_STYLE, TOKEN_STYLE,
+  TRANSITION_STYLE
 } from '../element-style';
 import { RepairService } from '../repair/repair.service';
 import { idAttribute } from './svg-constants';
@@ -202,7 +202,25 @@ export class SvgService {
           );
         }
       });
-    } else if (place.marking > 0) {
+    } else if (place.marking > 0 && place.marking <= 9) {
+      const tokens = [];
+      const px = getNumber(place.x) + offset.x;
+      const py = getNumber(place.y) + offset.y;
+      for (const offset of [{x: -1, y: 1}, {x: -1, y: -1}, {x: -1, y: 0}, {x: 0, y: -1}]) {
+        for (const flip of [1, -1]) {
+          tokens.push(this.createTokenSvg(px, py, 11 * offset.x * flip, 11 * offset.y * flip));
+        }
+      }
+      tokens.push(this.createTokenSvg(px, py, 0,0));
+      // decide visibility
+      for (let i = 0; i < (place.marking - 1) / 2; i++) {
+        result.unshift(tokens[2 * i]);
+        result.unshift(tokens[2 * i + 1]);
+      }
+      if (place.marking % 2 === 1) {
+        result.unshift(tokens[8]);
+      }
+    } else if (place.marking > 9) {
       const markingEl = this.createTextElementForPlaceContent(
         place.id,
         '' + place.marking
@@ -468,6 +486,14 @@ export class SvgService {
     this.applyStyle(result, TEXT_STYLE);
     result.textContent = content ?? id;
     return result;
+  }
+
+  private createTokenSvg(px: number, py: number, cxDelta: number, cyDelta: number): SVGElement {
+    const token = this.createSvgElement('circle');
+    this.applyStyle(token, TOKEN_STYLE);
+    token.setAttribute('cx', `${px + cxDelta}`);
+    token.setAttribute('cy', `${py + cyDelta}`);
+    return token;
   }
 
   private createSvgElement(name: string): SVGElement {

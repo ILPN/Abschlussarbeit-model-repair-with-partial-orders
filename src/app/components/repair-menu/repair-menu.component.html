@@ -1,11 +1,13 @@
 <div>
-  <div class="more-info-header">
+  <div class="more-info-header" fxLayout="row" fxLayoutAlign="start center">
     <mat-icon
       aria-hidden="false"
       [class]="'icon--' + placeSolution.type"
       [fontIcon]="placeSolution.type === 'error' ? 'error' : 'warning'"
     ></mat-icon>
-    <span [innerHTML]="infoHeader"> </span>
+    <div>
+      <span [innerHTML]="infoHeader"> </span>
+    </div>
   </div>
   <ng-container *ngIf="shownTextsForSolutions.length > 0; else emptyText">
     <button

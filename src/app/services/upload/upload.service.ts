@@ -1,26 +1,31 @@
 import { Injectable } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
-import { Observable, ReplaySubject, Subject } from 'rxjs';
-
-import { netTypeKey } from '../parser/parsing-constants';
+import { catchError, forkJoin, map, Observable, of, ReplaySubject, Subject, take } from 'rxjs';
+import { logTypeKey } from '../parser/parsing-constants';
 import { getRunTextFromPnml } from './pnml/pnml-to-run.fn';
 import { parseXesFileToCustomLogFormat } from './xes/xes-parser';
+import { HttpClient } from '@angular/common/http';
 
 export type StructureType = 'petri-net' | 'log';
 
 const allowedExtensions: { [key in StructureType]: string[] } = {
-  'petri-net': ['pn', 'pnml'],
-  log: ['txt', 'log', 'xes'],
+  'petri-net': ['json', 'pnml'],
+  log: ['json', 'xes']
 };
 
+interface LinkContent {
+  content?: string,
+  link: string
+}
+
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class UploadService {
   private currentNetUpload$: Subject<string>;
   private currentLogUpload$: Subject<string>;
 
-  constructor(private toastr: ToastrService) {
+  constructor(private toastr: ToastrService, private _http: HttpClient) {
     this.currentNetUpload$ = new ReplaySubject<string>(1);
     this.currentLogUpload$ = new ReplaySubject<string>(1);
   }
@@ -72,15 +77,8 @@ export class UploadService {
       const fileExtension = getExtensionForFileName(file.name);
 
       reader.onload = () => {
-        let content: string = reader.result as string;
-
-        if (fileExtension?.toLowerCase() === 'pnml') {
-          content = getRunTextFromPnml(content);
-        }
-        if (fileExtension?.toLowerCase() === 'xes') {
-          content = parseXesFileToCustomLogFormat(content);
-        }
-        this.processNewSource(content);
+        const content: string = reader.result as string;
+        this.processTextFileContent(content, fileExtension);
       };
 
       reader.readAsText(file);
@@ -93,12 +91,58 @@ export class UploadService {
     }
   }
 
-  private processNewSource(newSource: string): void {
-    if (newSource.trim().startsWith(netTypeKey)) {
-      this.currentNetUpload$.next(newSource);
+  uploadFilesFromLinks(links: string): Observable<void> {
+    const linkData$: Array<Observable<LinkContent>> = [];
+    const signal$ = new ReplaySubject<void>();
+
+    if (!links.startsWith('[')) {
+      linkData$.push(this.fetchLinkData(links));
     } else {
-      this.currentLogUpload$.next(newSource);
+      const parsed = JSON.parse(links) as Array<string>;
+      for (const l of parsed) {
+        linkData$.push(this.fetchLinkData(l));
+      }
     }
+
+    forkJoin(linkData$).pipe(take(1)).subscribe(results => {
+      results.filter(r => !!r.content).forEach(r => {
+        this.processTextFileContent(r.content as string, getExtensionForFileName(r.link), signal$);
+      });
+    });
+
+    return signal$.asObservable();
+  }
+
+  private fetchLinkData(link: string): Observable<LinkContent> {
+    return this._http.get(link, {
+      responseType: 'text'
+    }).pipe(
+      catchError(err => {
+        console.error('fetch data error', err);
+        return of(undefined);
+      }),
+      map( content => ({content, link}))
+    );
+  }
+
+  private processTextFileContent(content: string, fileExtension?: string, signal$?: ReplaySubject<void>) {
+    if (fileExtension?.toLowerCase() === 'pnml') {
+      content = getRunTextFromPnml(content);
+    }
+    if (fileExtension?.toLowerCase() === 'xes') {
+      content = parseXesFileToCustomLogFormat(content);
+    }
+    this.processNewSource(content, signal$);
+  }
+
+  private processNewSource(newSource: string, signal$?: ReplaySubject<void>): void {
+    if (newSource.trim().startsWith('[')) {
+      this.currentLogUpload$.next(newSource);
+    } else {
+      this.currentNetUpload$.next(newSource);
+    }
+    signal$?.next();
+    signal$?.complete();
   }
 }
 
@@ -115,5 +159,9 @@ function fileExtensionIsValid(fileName: string, type?: StructureType): boolean {
 }
 
 function getExtensionForFileName(fileName: string): string | undefined {
-  return fileName.split('.').pop();
+  const split = fileName.split('.');
+  if (split.length === 0) {
+    return undefined;
+  }
+  return split.pop();
 }

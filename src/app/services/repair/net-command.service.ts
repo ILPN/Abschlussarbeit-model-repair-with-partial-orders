@@ -1,21 +1,19 @@
 import { Injectable } from '@angular/core';
 import { first, map, Observable, of, tap } from 'rxjs';
-
 import { AutoRepair } from '../../algorithms/regions/parse-solutions.fn';
 import { PetriNet } from '../../classes/diagram/petri-net';
 import { Place } from '../../classes/diagram/place';
 import { DisplayService } from '../display.service';
-import { generateTextFromNet } from '../parser/net-to-text.func';
 import {
-  arcsAttribute,
-  netTypeKey,
-  placesAttribute,
-  transitionsAttribute,
-} from '../parser/parsing-constants';
+  generateJsonObjectFromNet,
+  generateTextFromNet,
+  generateTextFromNetJsonObject
+} from '../parser/net-to-text.func';
 import { UploadService } from '../upload/upload.service';
+import { JsonPetriNet } from '../parser/json-petri-net';
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class NetCommandService {
   undoQueue: string[] = [];
@@ -24,7 +22,8 @@ export class NetCommandService {
   constructor(
     private uploadService: UploadService,
     private displayService: DisplayService
-  ) {}
+  ) {
+  }
 
   repairNetForNewTransition(
     missingTransition: string,
@@ -112,15 +111,9 @@ function generateTextForNetWithTransition(
   petriNet: PetriNet,
   solution: AutoRepair
 ): string {
-  let newText = `${netTypeKey}\n${transitionsAttribute}\n`;
-  const labelToIdMap = new Map<string, string>();
-  petriNet.transitions.forEach((transition) => {
-    newText += `${transition.id} ${transition.label}\n`;
-    labelToIdMap.set(transition.label, transition.id);
-  });
+  const netObject = generateJsonObjectFromNet(petriNet);
 
   // Handle completely new transitions
-
   const requiredTransitions = getRequiredTransitions(solution);
   const transitionsThatDontExist = requiredTransitions.filter(
     (requiredLabel) =>
@@ -128,45 +121,27 @@ function generateTextForNetWithTransition(
         (transition) => transition.label === requiredLabel
       )
   );
-  for (const transitionLabel of transitionsThatDontExist) {
-    let id = transitionLabel;
-    while (petriNet.transitions.find((t) => t.id === id)) {
-      id += '_';
-    }
-    labelToIdMap.set(transitionLabel, id);
-    newText += `${id} ${transitionLabel}\n`;
-  }
-
-  newText += `${placesAttribute}\n`;
-  petriNet.places.forEach((place) => {
-    newText += `${place.id} ${place.marking}\n`;
-  });
+  netObject.transitions.push(...transitionsThatDontExist);
 
   let placeId = 'p' + petriNet.places.length;
   while (petriNet.places.find((t) => t.id === placeId)) {
     placeId += '_';
   }
-  newText += `${generatePlaceForSolution(placeId, 0, solution)}\n`;
+  netObject.places.push(placeId);
+  if ('newMarking' in solution && (solution?.newMarking ?? 0 > 0)) {
+    if (netObject.marking === undefined) {
+      netObject.marking = {};
+    }
+    netObject.marking[placeId] = solution.newMarking as number;
+  }
 
-  const arcsToGenerate = generateArcsForSolution(
+  generateArcsForSolution(
     placeId,
-    petriNet,
     solution,
-    labelToIdMap
+    netObject
   );
 
-  newText += `${arcsAttribute}\n`;
-  arcsToGenerate.forEach((arc, index) => {
-    newText += `${arc.source} ${arc.target}${
-      arc.weight > 1 ? ` ${arc.weight}` : ''
-    }`;
-
-    if (index !== arcsToGenerate.length - 1) {
-      newText += '\n';
-    }
-  });
-
-  return newText;
+  return generateTextFromNetJsonObject(netObject);
 }
 
 function generateTextForNewNet(
@@ -174,10 +149,7 @@ function generateTextForNewNet(
   petriNet: PetriNet,
   solution: AutoRepair
 ): string {
-  let newText = `${netTypeKey}\n${transitionsAttribute}\n`;
-  petriNet.transitions.forEach((transition) => {
-    newText += `${transition.id} ${transition.label}\n`;
-  });
+  const netObject = generateJsonObjectFromNet(petriNet);
 
   // Handle completely new transitions
   const requiredTransitions = getRequiredTransitions(solution);
@@ -187,60 +159,24 @@ function generateTextForNewNet(
         (transition) => transition.label === requiredLabel
       )
   );
-  const labelToIdMap = new Map<string, string>();
-
-  for (const transitionLabel of transitionsThatDontExist) {
-    let id = transitionLabel;
-    while (petriNet.transitions.find((t) => t.id === id)) {
-      id += '_';
-    }
-    labelToIdMap.set(transitionLabel, id);
-    newText += `${id} ${transitionLabel}\n`;
-  }
-
-  // Get Ids of existing transitions with same label
-  for (const requiredTransition of requiredTransitions) {
-    const transition = petriNet.transitions.find(
-      (t) => t.label === requiredTransition
-    );
-    if (transition) {
-      labelToIdMap.set(requiredTransition, transition.id);
-    }
-  }
-
-  newText += `${placesAttribute}\n`;
-  petriNet.places.forEach((place, index) => {
-    if (index !== placeIndex) {
-      newText += `${place.id} ${place.marking}\n`;
-    } else {
-      newText += `${generatePlaceForSolution(
-        place.id,
-        place.marking,
-        solution
-      )}\n`;
-    }
-  });
+  netObject.transitions.push(...transitionsThatDontExist);
 
   const oldPlace: Place = petriNet.places[placeIndex];
-  const arcsToGenerate = generateArcsForSolution(
+  generatePlaceForSolution(
     oldPlace.id,
-    petriNet,
+    oldPlace.marking,
     solution,
-    labelToIdMap
+    netObject,
+    placeIndex
   );
 
-  newText += `${arcsAttribute}\n`;
-  arcsToGenerate.forEach((arc, index) => {
-    newText += `${arc.source} ${arc.target}${
-      arc.weight > 1 ? ` ${arc.weight}` : ''
-    }`;
+  generateArcsForSolution(
+    oldPlace.id,
+    solution,
+    netObject
+  );
 
-    if (index !== arcsToGenerate.length - 1) {
-      newText += '\n';
-    }
-  });
-
-  return newText;
+  return generateTextFromNetJsonObject(netObject);
 }
 
 function getRequiredTransitions(solution: AutoRepair): string[] {
@@ -248,7 +184,7 @@ function getRequiredTransitions(solution: AutoRepair): string[] {
     return Array.from(
       new Set([
         ...solution.incoming.map((arc) => arc.transitionLabel),
-        ...solution.outgoing.map((arc) => arc.transitionLabel),
+        ...solution.outgoing.map((arc) => arc.transitionLabel)
       ])
     );
   }
@@ -258,7 +194,7 @@ function getRequiredTransitions(solution: AutoRepair): string[] {
       new Set(
         solution.places.flatMap((place) => [
           ...place.incoming.map((arc) => arc.transitionLabel),
-          ...place.outgoing.map((arc) => arc.transitionLabel),
+          ...place.outgoing.map((arc) => arc.transitionLabel)
         ])
       )
     );
@@ -270,80 +206,78 @@ function getRequiredTransitions(solution: AutoRepair): string[] {
 function generatePlaceForSolution(
   placeId: string,
   oldMarking: number,
-  solution: AutoRepair
-): string {
-  if (solution.type === 'marking') {
-    return `${placeId} ${solution.newMarking}`;
-  }
-  if (solution.type === 'modify-place' && solution.newMarking) {
-    return `${placeId} ${solution.newMarking}`;
-  }
-  if (solution.type === 'replace-place') {
-    let textToReturn = '';
-    for (let index = 0; index < solution.places.length; index++) {
-      textToReturn += `${placeId}_${index} ${
-        solution.places[index].newMarking ?? 0
-      }`;
-      if (index < solution.places.length - 1) {
-        textToReturn += '\n';
-      }
-    }
-    return textToReturn;
+  solution: AutoRepair,
+  netObject: JsonPetriNet,
+  oldPlaceIndex?: number
+): void {
+  if (netObject.marking === undefined) {
+    netObject.marking = {};
   }
 
-  return `${placeId} ${oldMarking}`;
+  if (solution.type === 'marking') {
+    netObject.marking[placeId] = solution.newMarking;
+    return;
+  }
+  if (solution.type === 'modify-place' && solution.newMarking) {
+    netObject.marking[placeId] = solution.newMarking;
+    return;
+  }
+  if (solution.type === 'replace-place') {
+    if (oldPlaceIndex === undefined) {
+      throw new Error('unexpected state');
+    }
+    const newPlaces = [];
+    for (let index = 0; index < solution.places.length; index++) {
+      const pid = `${placeId}_${index}`;
+      newPlaces.push(pid);
+      if (solution.places[index].newMarking) {
+        netObject.marking[pid] = solution.places[index].newMarking as number;
+      }
+    }
+    netObject.places.splice(oldPlaceIndex, 1, ...newPlaces);
+    return;
+  }
+
+  netObject.marking[placeId] = oldMarking;
 }
 
 function generateArcsForSolution(
   oldPlaceId: string,
-  petriNet: PetriNet,
   solution: AutoRepair,
-  labelToIdMap: Map<string, string>
-): SimpleArcDefinition[] {
+  netObject: JsonPetriNet
+): void {
   if (solution.type === 'marking') {
-    return petriNet.arcs;
+    return;
   }
 
-  const filteredArcs: SimpleArcDefinition[] = petriNet.arcs.filter(
-    (arc) => arc.target !== oldPlaceId && arc.source !== oldPlaceId
-  );
+  if (netObject.arcs === undefined) {
+    netObject.arcs = {};
+  }
+
+  for (const arc of Object.entries(netObject.arcs)) {
+    const split = arc[0].split(',');
+    if (split[0] === oldPlaceId || split[1] === oldPlaceId) {
+      delete netObject.arcs[arc[0]];
+    }
+  }
+
   if (solution.type === 'modify-place') {
-    return filteredArcs.concat(
-      ...solution.incoming.map((incoming) => ({
-        source:
-          labelToIdMap.get(incoming.transitionLabel) ||
-          incoming.transitionLabel,
-        target: oldPlaceId,
-        weight: incoming.weight,
-      })),
-      ...solution.outgoing.map((outgoing) => ({
-        source: oldPlaceId,
-        target:
-          labelToIdMap.get(outgoing.transitionLabel) ||
-          outgoing.transitionLabel,
-        weight: outgoing.weight,
-      }))
-    );
+    for (const arcDef of solution.incoming) {
+      netObject.arcs[`${arcDef.transitionLabel},${oldPlaceId}`] = arcDef.weight;
+    }
+    for (const arcDef of solution.outgoing) {
+      netObject.arcs[`${oldPlaceId},${arcDef.transitionLabel}`] = arcDef.weight;
+    }
+    return;
   }
 
-  return filteredArcs.concat(
-    solution.places.flatMap((place, index) => [
-      ...place.incoming.map((incoming) => ({
-        source:
-          labelToIdMap.get(incoming.transitionLabel) ||
-          incoming.transitionLabel,
-        target: `${oldPlaceId}_${index}`,
-        weight: incoming.weight,
-      })),
-      ...place.outgoing.map((outgoing) => ({
-        source: `${oldPlaceId}_${index}`,
-        target:
-          labelToIdMap.get(outgoing.transitionLabel) ||
-          outgoing.transitionLabel,
-        weight: outgoing.weight,
-      })),
-    ])
-  );
+  for (let index = 0; index < solution.places.length; index++) {
+    const place = solution.places[index];
+    for (const arcDef of place.incoming) {
+      netObject.arcs[`${arcDef.transitionLabel},${oldPlaceId}_${index}`] = arcDef.weight;
+    }
+    for (const arcDef of place.outgoing) {
+      netObject.arcs[`${oldPlaceId}_${index},${arcDef.transitionLabel}`] = arcDef.weight;
+    }
+  }
 }
-
-type SimpleArcDefinition = { source: string; target: string; weight: number };

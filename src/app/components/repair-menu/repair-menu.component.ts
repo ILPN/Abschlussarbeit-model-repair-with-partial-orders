@@ -58,7 +58,7 @@ export class RepairMenuComponent implements OnInit {
       .format(this.placeSolution.invalidTraceCount / this.partialOrderCount)
       .replace(' ', '');
     if (this.placeSolution.type === 'newTransition') {
-      this.infoHeader = `The transition ${this.placeSolution.missingTransition} is missing for ${this.placeSolution.invalidTraceCount} (${percentage}) traces.`;
+      this.infoHeader = `The transition ${this.placeSolution.missingTransition} is missing for ${this.placeSolution.invalidTraceCount} traces (${percentage}).`;
       this.shownTextsForSolutions = this.generateSolutionToDisplay(
         this.placeSolution.solutions,
         true
@@ -66,14 +66,18 @@ export class RepairMenuComponent implements OnInit {
       return;
     }
 
-    this.infoHeader = `The place cannot fire for ${this.placeSolution.invalidTraceCount} (${percentage}) traces.<br/>`;
+    // this.infoHeader = `The place cannot fire for ${this.placeSolution.invalidTraceCount} (${percentage}) traces.<br/>`;
 
     if (this.placeSolution.missingTokens) {
-      this.infoHeader += `The place has ${
+      this.infoHeader += `${
         this.placeSolution.missingTokens
       } missing ${
         this.placeSolution.missingTokens === 1 ? 'token' : 'tokens'
-      }.<br/>`;
+      }<br>${
+        this.placeSolution.invalidTraceCount
+      } disabled trace${
+        this.placeSolution.invalidTraceCount === 1 ? '' : 's'
+      } (${percentage})<br/>`;
     }
 
     const solutions = this.placeSolution.solutions;
@@ -83,7 +87,7 @@ export class RepairMenuComponent implements OnInit {
       this.shownTextsForSolutions = this.generateSolutionToDisplay(solutions);
     }
 
-    this.infoHeader += 'Choose a solution to repair the place:';
+    // this.infoHeader += 'Choose a solution to repair the place:';
   }
 
   useSolution(solution: AutoRepair): void {
@@ -138,12 +142,12 @@ function generateTextForAutoRepair(
 
 const solutionTypeToText: { [key in SolutionType]: string } = {
   changeMarking: 'Add tokens',
-  changeIncoming: 'Add ingoing tokens',
+  changeIncoming: 'Add arcs',
   multiplePlaces: 'Split place',
 };
 
 function getSubLabel(solution: { regionSize: number }): string {
-  return `<span>Region size: ${solution.regionSize}</span>`;
+  return `<span>Size: ${solution.regionSize}</span>`;
 }
 
 function generateBaseText(

@@ -48,6 +48,7 @@ svg foreignObject {
 
     --border-radius: 5px;
     --spaces: 8px;
+    --spaces-\2: calc(var(--spaces) / 2);
     --spaces-x2: calc(var(--spaces) * 2);
     --spaces-x3: calc(var(--spaces) * 3);
     --spaces-x4: calc(var(--spaces) * 4);
